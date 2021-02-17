@@ -7,12 +7,10 @@ const {
   SUBMIT_ADDITIONAL_PAYMENT_DETAILS_REQUEST_INVALID_JSON,
   AMOUNT_PLANNED_NOT_SAME,
   MAKE_PAYMENT_REQUEST_MISSING_REFERENCE,
-  MISSING_REQUIRED_FIELDS_ADYEN_MERCHANT_ACCOUNT,
-  MISSING_REQUIRED_FIELDS_CTP_PROJECT_KEY,
 } = require('../../src/validator/error-messages')
 
 describe('Validator builder', () => {
-  it('on invalid JSON validateRequestFields() should return error object', () => {
+  it('on invalid JSON validateRequestFields() should return error object', async () => {
     const invalidPayment = {
       custom: {
         fields: {
@@ -40,7 +38,7 @@ describe('Validator builder', () => {
     'payment has different amountPlanned and amount in makePaymentRequest custom field ' +
       'and interface interaction is empty, ' +
       'validateAmountPlanned() should return error object',
-    () => {
+    async () => {
       const payment = {
         amountPlanned: {
           type: 'centPrecision',
@@ -70,7 +68,7 @@ describe('Validator builder', () => {
   it(
     'payment has different amountPlanned and amount in makePaymentRequest interface interaction, ' +
       'validateAmountPlanned() should return error object',
-    () => {
+    async () => {
       const payment = {
         amountPlanned: {
           type: 'centPrecision',
@@ -135,7 +133,7 @@ describe('Validator builder', () => {
     }
   )
 
-  it('on missing reference in makePaymentRequest should return error object', () => {
+  it('on missing reference in makePaymentRequest should return error object', async () => {
     const makePaymentRequestDraft = {
       paymentMethod: {
         type: 'klarna',
@@ -163,61 +161,6 @@ describe('Validator builder', () => {
 
     expect(errorObject.missingReference).to.equal(
       MAKE_PAYMENT_REQUEST_MISSING_REFERENCE
-    )
-  })
-
-  it('on missing commercetoolsProjectKey in custom fields should return error object', () => {
-    const invalidPayment = {
-      custom: {
-        fields: {
-          adyenMerchantAccount: 'foo',
-        },
-      },
-    }
-    const errorObject = ValidatorBuilder.withPayment(invalidPayment)
-      .validateMetadataFields()
-      .getErrors()
-
-    expect(errorObject.missingRequiredCtpProjectKey).to.equal(
-      MISSING_REQUIRED_FIELDS_CTP_PROJECT_KEY
-    )
-  })
-
-  it('on missing adyenMerchantAccount in custom fields should return error object', () => {
-    const invalidPayment = {
-      custom: {
-        fields: {
-          commercetoolsProjectKey: 'bar',
-        },
-      },
-    }
-    const errorObject = ValidatorBuilder.withPayment(invalidPayment)
-      .validateMetadataFields()
-      .getErrors()
-
-    expect(errorObject.missingRequiredAdyenMerchantAcc).to.equal(
-      MISSING_REQUIRED_FIELDS_ADYEN_MERCHANT_ACCOUNT
-    )
-  })
-
-  it('on missing required custom fields should return error object', () => {
-    const invalidPayment = {
-      custom: {
-        fields: {
-          commercetoolsProjectKey: ' white spaced projectKey',
-          adyenMerchantAccount: ' ',
-        },
-      },
-    }
-    const errorObject = ValidatorBuilder.withPayment(invalidPayment)
-      .validateMetadataFields()
-      .getErrors()
-
-    expect(errorObject.missingRequiredAdyenMerchantAcc).to.equal(
-      MISSING_REQUIRED_FIELDS_ADYEN_MERCHANT_ACCOUNT
-    )
-    expect(errorObject.missingRequiredCtpProjectKey).to.equal(
-      MISSING_REQUIRED_FIELDS_CTP_PROJECT_KEY
     )
   })
 })

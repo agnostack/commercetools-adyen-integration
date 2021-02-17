@@ -1,13 +1,18 @@
 const server = require('./server.js').setupServer()
+const {
+  ensureInterfaceInteractionCustomType,
+} = require('./config/init/ensure-interface-interaction-custom-type')
+const ctp = require('./utils/ctp')
 const logger = require('./utils/logger').getLogger()
-const config = require('./config/config')
+const config = require('./config/config')()
 
-const moduleConfig = config.getModuleConfig()
+const ctpClient = ctp.get(config)
 
-const port = moduleConfig.port || 443
+const PORT = process.env.PORT || 443
 
-if (moduleConfig.keepAliveTimeout !== undefined)
-  server.keepAliveTimeout = moduleConfig.keepAliveTimeout
-server.listen(port, async () => {
-  logger.info(`Notification module is running at http://localhost:${port}`)
+if (config.keepAliveTimeout !== undefined)
+  server.keepAliveTimeout = config.keepAliveTimeout
+server.listen(PORT, async () => {
+  await ensureInterfaceInteractionCustomType(ctpClient)
+  logger.info(`Server started on ${PORT} port`)
 })

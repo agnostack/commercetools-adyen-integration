@@ -1,10 +1,10 @@
 const sinon = require('sinon')
 const chai = require('chai')
-const { handler } = require('../../index.lambda')
+const { handler } = require('../../src/lambda')
 const paymentHandler = require('../../src/paymentHandler/payment-handler')
 const utils = require('../../src/utils')
 
-const { expect } = chai
+const { expect, assert } = chai
 
 chai.use(require('chai-as-promised'))
 
@@ -65,9 +65,11 @@ describe('Lambda handler', () => {
     const call = async () => handler(event)
 
     await expect(call()).to.be.rejectedWith(error)
-    logSpy.calledWith(
-      error,
-      `Unexpected error when processing event ${JSON.stringify(error)}`
+    assert(
+      logSpy.calledWith(
+        error,
+        `Unexpected error when processing event ${JSON.stringify(event)}`
+      )
     )
   })
 })

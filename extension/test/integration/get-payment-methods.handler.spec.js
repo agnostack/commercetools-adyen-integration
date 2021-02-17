@@ -4,25 +4,14 @@ const _ = require('lodash')
 const ctpClientBuilder = require('../../src/ctp')
 const iTSetUp = require('./integration-test-set-up')
 const c = require('../../src/config/constants')
-const config = require('../../src/config/config')
 const packageJson = require('../../package.json')
 
 describe('::getPaymentMethods::', () => {
   let ctpClient
-  const adyenMerchantAccount = Object.keys(
-    JSON.parse(process.env.ADYEN_INTEGRATION_CONFIG).adyen
-  )[0]
-  const commercetoolsProjectKey = Object.keys(
-    JSON.parse(process.env.ADYEN_INTEGRATION_CONFIG).commercetools
-  )[0]
 
   before(async () => {
-    const ctpConfig = config.getCtpConfig(commercetoolsProjectKey)
-    ctpClient = ctpClientBuilder.get(ctpConfig)
-    await iTSetUp.initServerAndExtension({
-      ctpClient,
-      ctpProjectKey: ctpConfig.projectKey,
-    })
+    ctpClient = ctpClientBuilder.get()
+    await iTSetUp.initServerAndExtension({ ctpClient })
   })
 
   after(async () => {
@@ -60,8 +49,6 @@ describe('::getPaymentMethods::', () => {
             getPaymentMethodsRequest: JSON.stringify(
               getPaymentMethodsRequestDraft
             ),
-            commercetoolsProjectKey,
-            adyenMerchantAccount,
           },
         },
       }
@@ -104,7 +91,7 @@ describe('::getPaymentMethods::', () => {
       )
 
       expect(JSON.parse(interfaceInteraction.fields.request)).to.be.deep.equal({
-        merchantAccount: adyenMerchantAccount,
+        merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
         ...getPaymentMethodsRequestExtended,
       })
 
@@ -150,8 +137,6 @@ describe('::getPaymentMethods::', () => {
             getPaymentMethodsRequest: JSON.stringify(
               getPaymentMethodsRequestDraft
             ),
-            adyenMerchantAccount,
-            commercetoolsProjectKey,
           },
         },
       }
@@ -196,7 +181,7 @@ describe('::getPaymentMethods::', () => {
       expect(
         JSON.parse(paymentMethodsInteraction.fields.request)
       ).to.be.deep.equal({
-        merchantAccount: adyenMerchantAccount,
+        merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
         ...getPaymentMethodsRequestExtended,
       })
 

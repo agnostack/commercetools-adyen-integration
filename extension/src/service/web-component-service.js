@@ -1,92 +1,48 @@
+/* eslint-disable no-console */
 const fetch = require('node-fetch')
 const { serializeError } = require('serialize-error')
-const config = require('../config/config')
+const configLoader = require('../config/config')
 const packageJson = require('../../package.json')
 
-function getPaymentMethods(merchantAccount, getPaymentMethodsRequestObj) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  return callAdyen(
-    `${adyenCredentials.apiBaseUrl}/paymentMethods`,
-    merchantAccount,
-    adyenCredentials.apiKey,
-    extendRequestObjWithApplicationInfo(getPaymentMethodsRequestObj)
-  )
+const config = configLoader.load()
+
+function getPaymentMethods(getPaymentMethodsRequestObj) {
+  const url = `${config.adyen.apiBaseUrl}/paymentMethods`
+  const payload = extendRequestObjWithApplicationInfo(getPaymentMethodsRequestObj)
+  return callAdyen(url, payload)
 }
 
-function makePayment(
-  merchantAccount,
-  commercetoolsProjectKey,
-  makePaymentRequestObj
-) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  extendRequestObjWithMetadata(makePaymentRequestObj, commercetoolsProjectKey)
-  extendRequestObjWithApplicationInfo(makePaymentRequestObj)
+function makePayment(makePaymentRequestObj) {
   return callAdyen(
-    `${adyenCredentials.apiBaseUrl}/payments`,
-    merchantAccount,
-    adyenCredentials.apiKey,
-    makePaymentRequestObj
+    `${config.adyen.apiBaseUrl}/payments`,
+    extendRequestObjWithApplicationInfo(makePaymentRequestObj)
   )
 }
 
 function submitAdditionalPaymentDetails(
-  merchantAccount,
-  commercetoolsProjectKey,
   submitAdditionalPaymentDetailsRequestObj
 ) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  extendRequestObjWithMetadata(
-    submitAdditionalPaymentDetailsRequestObj,
-    commercetoolsProjectKey
-  )
-  extendRequestObjWithApplicationInfo(submitAdditionalPaymentDetailsRequestObj)
   return callAdyen(
-    `${adyenCredentials.apiBaseUrl}/payments/details`,
-    merchantAccount,
-    adyenCredentials.apiKey,
-    submitAdditionalPaymentDetailsRequestObj
+    `${config.adyen.apiBaseUrl}/payments/details`,
+    extendRequestObjWithApplicationInfo(
+      submitAdditionalPaymentDetailsRequestObj
+    )
   )
 }
 
-function manualCapture(
-  merchantAccount,
-  commercetoolsProjectKey,
-  manualCaptureRequestObj
-) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  extendRequestObjWithMetadata(manualCaptureRequestObj, commercetoolsProjectKey)
+function manualCapture(manualCaptureRequestObj) {
   return callAdyen(
-    `${adyenCredentials.legacyApiBaseUrl}/capture`,
-    merchantAccount,
-    adyenCredentials.apiKey,
+    `${config.adyen.legacyApiBaseUrl}/capture`,
     manualCaptureRequestObj
   )
 }
 
-function cancelPayment(
-  merchantAccount,
-  commercetoolsProjectKey,
-  cancelPaymentRequestObj
-) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  extendRequestObjWithMetadata(cancelPaymentRequestObj)
-  return callAdyen(
-    `${adyenCredentials.legacyApiBaseUrl}/cancel`,
-    merchantAccount,
-    adyenCredentials.apiKey,
-    cancelPaymentRequestObj
-  )
+function cancelPayment(cancelRequestObj) {
+  return callAdyen(`${config.adyen.legacyApiBaseUrl}/cancel`, cancelRequestObj)
 }
 
-function refund(merchantAccount, commercetoolsProjectKey, refundRequestObj) {
-  const adyenCredentials = config.getAdyenConfig(merchantAccount)
-  extendRequestObjWithMetadata(refundRequestObj, commercetoolsProjectKey)
-  return callAdyen(
-    `${adyenCredentials.legacyApiBaseUrl}/refund`,
-    merchantAccount,
-    adyenCredentials.apiKey,
-    refundRequestObj
-  )
+function refund(refundRequestObj) {
+  return callAdyen(`${config.adyen.legacyApiBaseUrl}/refund`, refundRequestObj)
 }
 
 function extendRequestObjWithApplicationInfo(requestObj) {
@@ -103,24 +59,18 @@ function extendRequestObjWithApplicationInfo(requestObj) {
   return requestObj
 }
 
-function extendRequestObjWithMetadata(requestObj, commercetoolsProjectKey) {
-  requestObj.metadata = {
-    commercetoolsProjectKey,
-  }
-}
-
-async function callAdyen(url, adyenMerchantAccount, adyenApiKey, request) {
+async function callAdyen(url, request) {
   let response
   try {
-    response = await fetchAsync(url, adyenMerchantAccount, adyenApiKey, request)
+    response = await fetchAsync(url, request)
   } catch (err) {
     response = serializeError(err)
   }
   return { request, response }
 }
 
-async function fetchAsync(url, adyenMerchantAccount, adyenApiKey, requestObj) {
-  const request = buildRequest(adyenMerchantAccount, adyenApiKey, requestObj)
+async function fetchAsync(url, requestObj) {
+  const request = buildRequest(requestObj)
   const response = await fetch(url, request)
   const responseBody = await response.json()
   // strip away sensitive data from the adyen response.
@@ -128,18 +78,20 @@ async function fetchAsync(url, adyenMerchantAccount, adyenApiKey, requestObj) {
   return responseBody
 }
 
-function buildRequest(adyenMerchantAccount, adyenApiKey, requestObj) {
-  // Note: ensure the merchantAccount is set with request, otherwise set
-  // it with the value from adyenMerchantAccount payment custom field
+function buildRequest(requestObj) {
+  // Note: ensure the merchantAccount is set with request, otherwise set.
+  // `makePaymentRequest` custom field will have the value in payload but the value
+  // also needed in the `cancel` and `capture` payment handler,
+  // because the request will be added as a commercetools transaction.
   if (!requestObj.merchantAccount)
-    requestObj.merchantAccount = adyenMerchantAccount
+    requestObj.merchantAccount = config.adyen.merchantAccount
 
   return {
     method: 'POST',
     body: JSON.stringify(requestObj),
     headers: {
       'Content-Type': 'application/json',
-      'X-Api-Key': adyenApiKey,
+      'X-Api-Key': config.adyen.apiKey,
     },
   }
 }

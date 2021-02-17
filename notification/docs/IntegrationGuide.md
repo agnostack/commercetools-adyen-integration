@@ -45,8 +45,7 @@ Adyen sends notifications which look like this:
     {
       "NotificationRequestItem": {
         "additionalData": {
-          "hmacSignature": "cjiTz03EI0jkkysGDdPJQdLbecRVVU/5jm12/DTFEHo=",
-          "metadata.commercetoolsProjectKey": "YOUR_COMMERCETOOLS_PROJECT_KEY" // should match a project key in ADYEN_INTEGRATION_CONFIG
+          "hmacSignature": "cjiTz03EI0jkkysGDdPJQdLbecRVVU/5jm12/DTFEHo="
         },
         "amount": {
           "currency": "EUR",
@@ -54,7 +53,7 @@ Adyen sends notifications which look like this:
         },
         "eventCode": "AUTHORISATION",
         "eventDate": "2019-01-30T18:16:22+01:00",
-        "merchantAccountCode": "YOUR_MERCHANT_ACCOUNT", // should match a merchant account in ADYEN_INTEGRATION_CONFIG
+        "merchantAccountCode": "YOUR_MERCHANT_ACCOUNT",
         "merchantReference": "YOUR_REFERENCE", // should match an existing payment key in commercetools
         "operations": ["CANCEL", "CAPTURE", "REFUND"],
         "paymentMethod": "visa",
@@ -65,8 +64,6 @@ Adyen sends notifications which look like this:
   ]
 }
 ```
-
-As one notification module instance can receive notifications from multiple Adyen merchant accounts and for multiple commercetools projects (so-called multitenancy), it is necessary to have these accounts and projects configured and pass as environment variable `ADYEN_INTEGRATION_CONFIG`. Follow our [how to run guide](./HowToRun.md#environment-variables) for more details.
 
 Each notification contains an `eventCode` that specifies which type of event triggered the notification.
 Notification module maps this `eventCode` and `success` pair to

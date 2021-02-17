@@ -1,12 +1,13 @@
-const utils = require('./src/utils')
-const paymentHandler = require('./src/paymentHandler/payment-handler')
+/* eslint-disable no-console */
+const utils = require('./utils')
+const paymentHandler = require('../src/paymentHandler/payment-handler')
 
 const logger = utils.getLogger()
 
-exports.handler = async (event) => {
+// eslint-disable-next-line func-names
+exports.handler = async function (event) {
   try {
-    const body = event.body ? JSON.parse(event.body) : event
-    const paymentResult = await paymentHandler.handlePayment(body.resource.obj)
+    const paymentResult = await paymentHandler.handlePayment(event.resource.obj)
 
     return {
       responseType: paymentResult.success
@@ -17,7 +18,10 @@ exports.handler = async (event) => {
       actions: paymentResult.data ? paymentResult.data.actions : [],
     }
   } catch (e) {
-    logger.error(e, `Unexpected error when processing event`)
+    logger.error(
+      e,
+      `Unexpected error when processing event ${JSON.stringify(event)}`
+    )
     throw e
   }
 }

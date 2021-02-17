@@ -1,7 +1,7 @@
 const { expect } = require('chai')
 const iTSetUp = require('../integration/integration-test-set-up')
 const ctpClientBuilder = require('../../src/ctp')
-const config = require('../../src/config/config')
+const configBuilder = require('../../src/config/config')
 const { routes } = require('../../src/routes')
 const httpUtils = require('../../src/utils')
 const pU = require('../../src/paymentHandler/payment-utils')
@@ -22,8 +22,6 @@ const {
 describe('::klarnaPayment::', () => {
   let browser
   let ctpClient
-  const adyenMerchantAccount = config.getAllAdyenMerchantAccounts()[0]
-  const ctpProjectKey = config.getAllCtpProjectKeys()[0]
 
   beforeEach(async () => {
     routes['/make-payment-form'] = async (request, response) => {
@@ -53,11 +51,11 @@ describe('::klarnaPayment::', () => {
           '</body></html>',
       })
 
-    const ctpConfig = config.getCtpConfig(ctpProjectKey)
-    ctpClient = ctpClientBuilder.get(ctpConfig)
+    ctpClient = ctpClientBuilder.get()
     await iTSetUp.initServerAndExtension({
       ctpClient,
-      ctpProjectKey: ctpConfig.projectKey,
+      routes,
+      testServerPort: 8080,
     })
     browser = await initPuppeteerBrowser()
   })
@@ -70,16 +68,13 @@ describe('::klarnaPayment::', () => {
   it(
     'when payment method is klarna and process is done correctly, ' +
       'then it should successfully finish the payment',
-    async function func() {
+    async function () {
       this.timeout(60000)
 
-      const baseUrl = config.getModuleConfig().apiExtensionBaseUrl
-      const clientKey = config.getAdyenConfig(adyenMerchantAccount).clientKey
-      const payment = await createPayment(
-        ctpClient,
-        adyenMerchantAccount,
-        ctpProjectKey
-      )
+      const config = configBuilder.load()
+      const baseUrl = config.apiExtensionBaseUrl
+      const clientKey = config.adyen.clientKey
+      const payment = await createPayment(ctpClient, baseUrl)
 
       const browserTab = await browser.newPage()
 

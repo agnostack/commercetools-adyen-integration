@@ -1,0 +1,25 @@
+service: webhook-adyen-notification
+
+plugins:
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  profile: agnoStack-dev
+  stage: dev
+  environment:
+    CTP_PROJECT_KEY: ${env:CTP_PROJECT_KEY}
+    CTP_CLIENT_ID: ${env:CTP_CLIENT_ID}
+    CTP_CLIENT_SECRET: ${env:CTP_CLIENT_SECRET}
+    CTP_HOST: ${env:CTP_HOST}
+    CTP_AUTH_URL: ${env:CTP_AUTH_URL}
+    ADYEN_ENABLE_HMAC_SIGNATURE: ${env:ADYEN_ENABLE_HMAC_SIGNATURE}
+
+functions:
+  notification:
+    handler: src/lambda.handler
+    events:
+      - http:
+          path: notification
+          method: post

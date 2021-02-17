@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const ValidatorBuilder = require('../validator/validator-builder')
 const getPaymentMethodsHandler = require('./get-payment-methods.handler')
 const makePaymentHandler = require('./make-payment.handler')
@@ -26,7 +27,6 @@ async function handlePayment(paymentObject) {
     return { success: true, data: null }
 
   const paymentValidator = ValidatorBuilder.withPayment(paymentObject)
-    .validateMetadataFields()
     .validateRequestFields()
     .validateReference()
     .validateAmountPlanned()
@@ -95,8 +95,9 @@ function _getPaymentHandlers(paymentObject) {
 }
 
 function _isAdyenPayment(paymentObject) {
+  const { paymentMethodInfo = {} } = paymentObject || {}
   return (
-    paymentObject.paymentMethodInfo.paymentInterface === CTP_ADYEN_INTEGRATION
+    paymentMethodInfo.paymentInterface === CTP_ADYEN_INTEGRATION
   )
 }
 

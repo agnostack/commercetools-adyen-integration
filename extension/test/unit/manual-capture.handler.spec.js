@@ -1,7 +1,7 @@
 const nock = require('nock')
 const { cloneDeep } = require('lodash')
 const { expect } = require('chai')
-const config = require('../../src/config/config')
+const configLoader = require('../../src/config/config')
 const { execute } = require('../../src/paymentHandler/manual-capture.handler')
 const {
   CTP_INTERACTION_TYPE_MANUAL_CAPTURE,
@@ -34,9 +34,6 @@ describe('manual-capture.handler::execute::', () => {
         },
       },
     ],
-    custom: {
-      fields: {},
-    },
   }
   /* eslint-enable */
 
@@ -51,11 +48,9 @@ describe('manual-capture.handler::execute::', () => {
   }
 
   let scope
-  const adyenMerchantAccount = config.getAllAdyenMerchantAccounts()[0]
-
+  const config = configLoader.load()
   beforeEach(() => {
-    const adyenConfig = config.getAdyenConfig(adyenMerchantAccount)
-    scope = nock(`${adyenConfig.legacyApiBaseUrl}`)
+    scope = nock(`${config.adyen.legacyApiBaseUrl}`)
   })
 
   it(
@@ -72,7 +67,6 @@ describe('manual-capture.handler::execute::', () => {
 
       const paymentObject = cloneDeep(authorisedPayment)
       paymentObject.transactions.push(chargeInitialTransaction)
-      paymentObject.custom.fields.adyenMerchantAccount = adyenMerchantAccount
 
       const { actions } = await execute(paymentObject)
 
@@ -125,7 +119,6 @@ describe('manual-capture.handler::execute::', () => {
 
       const paymentObject = cloneDeep(authorisedPayment)
       paymentObject.transactions.push(chargeInitialTransaction)
-      paymentObject.custom.fields.adyenMerchantAccount = adyenMerchantAccount
 
       const { actions } = await execute(paymentObject)
       expect(actions).to.have.lengthOf(1)

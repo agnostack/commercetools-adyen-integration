@@ -6,11 +6,10 @@ async function execute(paymentObject) {
   const getPaymentMethodsRequestObj = JSON.parse(
     paymentObject.custom.fields.getPaymentMethodsRequest
   )
-  const adyenMerchantAccount = paymentObject.custom.fields.adyenMerchantAccount
   const { request, response } = await getPaymentMethods(
-    adyenMerchantAccount,
     getPaymentMethodsRequestObj
   )
+  // eslint-disable-next-line no-console
   return {
     actions: [
       pU.createAddInterfaceInteractionAction({

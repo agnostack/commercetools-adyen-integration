@@ -21,7 +21,7 @@ describe('Ensure resources', () => {
         },
       }
     },
-    fetchByKey() {},
+    fetch() {},
     create() {},
   }
 
@@ -30,7 +30,7 @@ describe('Ensure resources', () => {
   })
 
   it('should ensure payment type, interface interaction type and API extension are created', async () => {
-    sinon.stub(mockClient, 'fetchByKey').throws({ statusCode: 404 })
+    sinon.stub(mockClient, 'fetch').returns({ body: { results: [] } })
     const createStub = sinon
       .stub(mockClient, 'create')
       .returns({ body: { results: [] } })
@@ -61,26 +61,27 @@ describe('Ensure resources', () => {
     )
   })
 
+  it('should skip creating resources when they already exist', async () => {
+    sinon
+      .stub(mockClient, 'fetch')
+      .returns({ body: { results: [{ id: 'testId' }] } })
+    const createStub = sinon
+      .stub(mockClient, 'create')
+      .returns({ body: { results: [] } })
+
+    await ensureResources(mockClient)
+
+    expect(createStub.callCount).to.equal(0)
+  })
+
   it('should fail when there is error on resource creation', async () => {
-    sinon.stub(mockClient, 'fetchByKey').throws({ statusCode: 404 })
+    sinon.stub(mockClient, 'fetch').returns({ body: { results: [] } })
     sinon.stub(mockClient, 'create').throws('test error')
 
     try {
       await ensureResources(mockClient)
     } catch (e) {
-      expect(e.message).to.contain('test error')
-      return
-    }
-    throw new Error('ensureResources should throw an error but did not')
-  })
-
-  it('should fail when there is error on resource fetching', async () => {
-    sinon.stub(mockClient, 'fetchByKey').throws({ statusCode: 500 })
-
-    try {
-      await ensureResources(mockClient)
-    } catch (e) {
-      expect(e.message).to.contain('500')
+      expect(e.name).to.equal('test error')
       return
     }
     throw new Error('ensureResources should throw an error but did not')

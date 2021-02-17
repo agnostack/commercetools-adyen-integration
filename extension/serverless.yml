@@ -1,0 +1,29 @@
+service: webhook-adyen-extension
+
+plugins:
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  profile: agnoStack-dev
+  stage: dev
+  environment:
+    API_EXTENSION_BASE_URL: ${env:API_EXTENSION_BASE_URL}
+    CTP_PROJECT_KEY: ${env:CTP_PROJECT_KEY}
+    CTP_CLIENT_ID: ${env:CTP_CLIENT_ID}
+    CTP_CLIENT_SECRET: ${env:CTP_CLIENT_SECRET}
+    CTP_HOST: ${env:CTP_HOST}
+    CTP_AUTH_URL: ${env:CTP_AUTH_URL}
+    ADYEN_MERCHANT_ACCOUNT: ${env:ADYEN_MERCHANT_ACCOUNT}
+    ADYEN_API_KEY: ${env:ADYEN_API_KEY}
+    ADYEN_API_BASE_URL: ${env:ADYEN_API_BASE_URL}
+    ADYEN_LEGACY_API_BASE_URL: ${env:ADYEN_LEGACY_API_BASE_URL}
+
+functions:
+  extension:
+    handler: src/lambda.handler
+    events:
+      - http:
+          path: extension
+          method: post

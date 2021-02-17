@@ -1,7 +1,7 @@
 const iTSetUp = require('../integration/integration-test-set-up')
 const ctpClientBuilder = require('../../src/ctp')
 const { routes } = require('../../src/routes')
-const config = require('../../src/config/config')
+const configBuilder = require('../../src/config/config')
 const MakePaymentFormPage = require('./pageObjects/CreditCardMakePaymentFormPage')
 const {
   assertPayment,
@@ -14,8 +14,6 @@ const {
 describe('::creditCardPayment::', () => {
   let browser
   let ctpClient
-  const ctpProjectKey = config.getAllCtpProjectKeys()[0]
-  const adyenMerchantAccount = config.getAllAdyenMerchantAccounts()[0]
 
   // See more: https://docs.adyen.com/development-resources/test-cards/test-card-numbers
   const creditCards = [
@@ -27,11 +25,11 @@ describe('::creditCardPayment::', () => {
     routes['/make-payment-form'] = async (request, response) => {
       serveFile('./test/e2e/fixtures/make-payment-form.html', request, response)
     }
-    const ctpConfig = config.getCtpConfig(ctpProjectKey)
-    ctpClient = ctpClientBuilder.get(ctpConfig)
+    ctpClient = ctpClientBuilder.get()
     await iTSetUp.initServerAndExtension({
       ctpClient,
-      ctpProjectKey: ctpConfig.projectKey,
+      routes,
+      testServerPort: 8080,
     })
     browser = await initPuppeteerBrowser()
   })
@@ -53,18 +51,14 @@ describe('::creditCardPayment::', () => {
         `when credit card issuer is ${name} and credit card number is ${creditCardNumber}, ` +
           'then it should successfully finish the payment',
         async () => {
-          const baseUrl = config.getModuleConfig().apiExtensionBaseUrl
-          const clientKey = config.getAdyenConfig(adyenMerchantAccount)
-            .clientKey
-          const payment = await createPayment(
-            ctpClient,
-            adyenMerchantAccount,
-            ctpProjectKey
-          )
+          const config = configBuilder.load()
+          const baseUrl = config.apiExtensionBaseUrl
+          const clientKey = config.adyen.clientKey
+          const payment = await createPayment(ctpClient, baseUrl)
 
           const browserTab = await browser.newPage()
 
-          const paymentAfterMakePayment = await makePayment({
+          const paymentAfteMakePayment = await makePayment({
             browserTab,
             payment,
             baseUrl,
@@ -74,7 +68,7 @@ describe('::creditCardPayment::', () => {
             clientKey,
           })
 
-          assertPayment(paymentAfterMakePayment, 'makePayment')
+          assertPayment(paymentAfteMakePayment, 'makePayment')
         }
       )
     }

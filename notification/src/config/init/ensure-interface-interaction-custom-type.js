@@ -1,72 +1,28 @@
-const { createSyncTypes } = require('@commercetools/sync-actions')
-const { serializeError } = require('serialize-error')
-const mainLogger = require('../../utils/logger').getLogger()
+const logger = require('../../utils/logger').getLogger()
 
 const interfaceInteractionType = require('../../../resources/payment-interface-interaction-type.json')
-const config = require('../config')
-const ctp = require('../../utils/ctp')
+const config = require('../config')()
 
-async function ensureInterfaceInteractionCustomTypeForAllProjects() {
-  const commercetoolsProjectKeys = config.getAllCtpProjectKeys()
-  for (const commercetoolsProjectKey of commercetoolsProjectKeys) {
-    const ctpConfig = config.getCtpConfig(commercetoolsProjectKey)
-    const ctpClient = ctp.get(ctpConfig)
-    await ensureInterfaceInteractionCustomType(ctpClient, ctpConfig.projectKey)
-  }
-}
-
-async function ensureInterfaceInteractionCustomType(ctpClient, ctpProjectKey) {
-  return syncCustomType(
-    ctpClient,
-    createChildLogger(ctpProjectKey),
-    interfaceInteractionType
-  )
-}
-
-function createChildLogger(ctpProjectKey) {
-  return mainLogger.child({
-    commercetools_project_key: ctpProjectKey,
-  })
-}
-
-async function syncCustomType(ctpClient, logger, typeDraft) {
+async function ensureInterfaceInteractionCustomType(ctpClient) {
   try {
-    const existingType = await fetchTypeByKey(ctpClient, typeDraft.key)
-    if (existingType === null) {
-      await ctpClient.create(ctpClient.builder.types, typeDraft)
-      logger.info(`Successfully created the type (key=${typeDraft.key})`)
-    } else {
-      const syncTypes = createSyncTypes()
-      const updateActions = syncTypes.buildActions(typeDraft, existingType)
-      if (updateActions.length > 0) {
-        await ctpClient.update(
-          ctpClient.builder.types,
-          existingType.id,
-          existingType.version,
-          updateActions
-        )
-        logger.info(`Successfully updated the type (key=${typeDraft.key})`)
-      }
+    if (!config.ensureResources) return
+    logger.debug('Ensuring interfaceInteraction')
+    const { body } = await ctpClient.fetch(
+      ctpClient.builder.types.where(`key="${interfaceInteractionType.key}"`)
+    )
+    if (body.results.length === 0) {
+      logger.debug('Creating interface interaction')
+      await ctpClient.create(ctpClient.builder.types, interfaceInteractionType)
+      logger.info('Successfully created an interfaceInteraction type')
     }
   } catch (err) {
-    throw Error(
-      `Failed to sync payment type (key=${typeDraft.key}). ` +
-        `Error: ${JSON.stringify(serializeError(err))}`
+    logger.error(
+      err,
+      'Error when creating interface interaction custom type, skipping...'
     )
   }
 }
 
-async function fetchTypeByKey(ctpClient, key) {
-  try {
-    const { body } = await ctpClient.fetchByKey(ctpClient.builder.types, key)
-    return body
-  } catch (err) {
-    if (err.statusCode === 404) return null
-    throw err
-  }
-}
-
 module.exports = {
-  ensureInterfaceInteractionCustomTypeForAllProjects,
   ensureInterfaceInteractionCustomType,
 }

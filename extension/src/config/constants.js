@@ -1,5 +1,5 @@
 module.exports = {
-  CTP_ADYEN_INTEGRATION: 'ctp-adyen-integration',
+  CTP_ADYEN_INTEGRATION: 'ctp-adyen-integration-payment-extension',
   CTP_PAYMENT_INTERACTION_CUSTOM_TYPE_KEY:
     'ctp-adyen-integration-interaction-payment-type',
   CTP_PAYMENT_CUSTOM_TYPE_KEY:

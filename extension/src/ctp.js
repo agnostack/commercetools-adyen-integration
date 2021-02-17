@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
-const { merge } = require('lodash')
+const _ = require('lodash')
+
 const { createClient } = require('@commercetools/sdk-client')
 const {
   createAuthMiddlewareForClientCredentialsFlow,
@@ -12,51 +13,24 @@ const { createQueueMiddleware } = require('@commercetools/sdk-middleware-queue')
 const { createRequestBuilder } = require('@commercetools/api-request-builder')
 const packageJson = require('../package.json')
 
-/**
+const configLoader = require('./config/config')
 
-The token projectKeyToAuthResultMap caches the access tokens (based on projectKey) obtained through
- the client credentials flow between different clients.
-
-The projectKeyToAuthResultMap is used by middleware to avoid authentication each time when
- it's needed to create an authentication token.
-
- When the token expires the sdk-middleware-auth is refreshing the token.
-
-projectKeyToAuthResultMap representation: {
-  token, expirationTime, refreshToken
-}
-
-tokenCacheOptions representation : {
-    clientId, host, projectKey
-}
- */
-const tokenCache = {
-  projectKeyToAuthResultMap: {},
-  get(tokenCacheOptions) {
-    return this.projectKeyToAuthResultMap[tokenCacheOptions.projectKey]
-  },
-  set(cache, tokenCacheOptions) {
-    this.projectKeyToAuthResultMap[tokenCacheOptions.projectKey] = cache
-  },
-}
+const config = configLoader.load()
 
 function createCtpClient({
   clientId,
   clientSecret,
   projectKey,
-  authUrl,
-  apiUrl,
   concurrency = 10,
 }) {
   const authMiddleware = createAuthMiddlewareForClientCredentialsFlow({
-    host: authUrl,
+    host: config.ctp.authUrl,
     projectKey,
     credentials: {
       clientId,
       clientSecret,
     },
     fetch,
-    tokenCache,
   })
 
   const userAgentMiddleware = createUserAgentMiddleware({
@@ -68,7 +42,7 @@ function createCtpClient({
 
   const httpMiddleware = createHttpMiddleware({
     maskSensitiveHeaderData: true,
-    host: apiUrl,
+    host: config.ctp.apiUrl,
     enableRetry: true,
     fetch,
   })
@@ -87,11 +61,11 @@ function createCtpClient({
   })
 }
 
-function setUpClient(config) {
-  const ctpClient = createCtpClient(config)
+function setUpClient() {
+  const ctpClient = createCtpClient(config.ctp)
   const customMethods = {
     get builder() {
-      return getRequestBuilder(config.projectKey)
+      return getRequestBuilder(config.ctp.projectKey)
     },
 
     delete(uri, id, version) {
@@ -123,10 +97,6 @@ function setUpClient(config) {
       return ctpClient.execute(this.buildRequestOptions(uri.build()))
     },
 
-    fetchByKey(uri, key) {
-      return ctpClient.execute(this.buildRequestOptions(uri.byKey(key).build()))
-    },
-
     fetchBatches(uri, callback, opts = { accumulate: false }) {
       return this.process(
         this.buildRequestOptions(uri.build()),
@@ -147,7 +117,7 @@ function setUpClient(config) {
       }
     },
   }
-  return merge(customMethods, ctpClient)
+  return _.merge(customMethods, ctpClient)
 }
 
 function getRequestBuilder(projectKey) {
@@ -155,5 +125,5 @@ function getRequestBuilder(projectKey) {
 }
 
 module.exports = {
-  get: (config) => setUpClient(config),
+  get: () => setUpClient(),
 }

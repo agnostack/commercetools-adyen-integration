@@ -13,9 +13,6 @@ async function execute(paymentObject) {
   const submitAdditionalDetailsRequestObj = JSON.parse(
     paymentObject.custom.fields.submitAdditionalPaymentDetailsRequest
   )
-  const adyenMerchantAccount = paymentObject.custom.fields.adyenMerchantAccount
-  const commercetoolsProjectKey =
-    paymentObject.custom.fields.commercetoolsProjectKey
   if (!submitAdditionalDetailsRequestObj.paymentData) {
     const makePaymentResponseObj = JSON.parse(
       paymentObject.custom.fields.makePaymentResponse
@@ -25,8 +22,6 @@ async function execute(paymentObject) {
   }
   if (_isNewRequest(submitAdditionalDetailsRequestObj, paymentObject)) {
     const { request, response } = await submitAdditionalPaymentDetails(
-      adyenMerchantAccount,
-      commercetoolsProjectKey,
       submitAdditionalDetailsRequestObj
     )
     actions.push(

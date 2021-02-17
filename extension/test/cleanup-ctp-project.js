@@ -1,14 +1,7 @@
 const ctpClientBuilder = require('../src/ctp')
 const iTSetUp = require('./integration/integration-test-set-up')
-const config = require('../src/config/config')
 
 before(async () => {
-  const ctpProjectKeys = config.getAllCtpProjectKeys()
-  await Promise.all(
-    ctpProjectKeys.map(async (ctpProjectKey) => {
-      const ctpConfig = config.getCtpConfig(ctpProjectKey)
-      const ctpClient = ctpClientBuilder.get(ctpConfig)
-      await iTSetUp.cleanupCtpResources(ctpClient)
-    })
-  )
+  const ctpClient = ctpClientBuilder.get()
+  await iTSetUp.cleanupCtpResources(ctpClient)
 })

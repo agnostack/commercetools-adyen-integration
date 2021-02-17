@@ -1,7 +1,7 @@
 const iTSetUp = require('../integration/integration-test-set-up')
 const ctpClientBuilder = require('../../src/ctp')
 const { routes } = require('../../src/routes')
-const config = require('../../src/config/config')
+const configBuilder = require('../../src/config/config')
 const httpUtils = require('../../src/utils')
 const {
   assertPayment,
@@ -17,8 +17,6 @@ const CreditCardNativePage = require('./pageObjects/CreditCard3dsNativePage')
 describe('::creditCardPayment3dsNative::', () => {
   let browser
   let ctpClient
-  const adyenMerchantAccount = config.getAllAdyenMerchantAccounts()[0]
-  const ctpProjectKey = config.getAllCtpProjectKeys()[0]
 
   // See more: https://docs.adyen.com/development-resources/test-cards/test-card-numbers
   const creditCards = [
@@ -60,11 +58,11 @@ describe('::creditCardPayment3dsNative::', () => {
       })
     }
 
-    const ctpConfig = config.getCtpConfig(ctpProjectKey)
-    ctpClient = ctpClientBuilder.get(ctpConfig)
+    ctpClient = ctpClientBuilder.get()
     await iTSetUp.initServerAndExtension({
       ctpClient,
-      ctpProjectKey: ctpConfig.projectKey,
+      routes,
+      testServerPort: 8080,
     })
     browser = await initPuppeteerBrowser()
   })
@@ -86,14 +84,10 @@ describe('::creditCardPayment3dsNative::', () => {
         `when credit card issuer is ${name} and credit card number is ${creditCardNumber}, ` +
           'then it should successfully finish the payment with 3DS native authentication flow',
         async () => {
-          const baseUrl = config.getModuleConfig().apiExtensionBaseUrl
-          const clientKey = config.getAdyenConfig(adyenMerchantAccount)
-            .clientKey
-          const payment = await createPayment(
-            ctpClient,
-            adyenMerchantAccount,
-            ctpProjectKey
-          )
+          const config = configBuilder.load()
+          const baseUrl = config.apiExtensionBaseUrl
+          const clientKey = config.adyen.clientKey
+          const payment = await createPayment(ctpClient)
 
           const browserTab = await browser.newPage()
 

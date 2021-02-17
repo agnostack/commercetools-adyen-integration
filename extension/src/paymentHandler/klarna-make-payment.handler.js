@@ -1,6 +1,5 @@
 const ctpClientBuilder = require('../ctp')
 const makePaymentHandler = require('./make-payment.handler')
-const config = require('../config/config')
 
 const ADYEN_PERCENTAGE_MINOR_UNIT = 10000
 const DEFAULT_PAYMENT_LANGUAGE = 'en'
@@ -10,13 +9,8 @@ async function execute(paymentObject) {
   const makePaymentRequestObj = JSON.parse(
     paymentObject.custom.fields.makePaymentRequest
   )
-  const commercetoolsProjectKey =
-    paymentObject.custom.fields.commercetoolsProjectKey
   if (!makePaymentRequestObj.lineItems) {
-    const ctpCart = await _fetchMatchingCart(
-      paymentObject,
-      commercetoolsProjectKey
-    )
+    const ctpCart = await _fetchMatchingCart(paymentObject)
     if (ctpCart) {
       makePaymentRequestObj.lineItems = createLineItems(paymentObject, ctpCart)
       paymentObject.custom.fields.makePaymentRequest = JSON.stringify(
@@ -28,9 +22,8 @@ async function execute(paymentObject) {
   return makePaymentHandler.execute(paymentObject)
 }
 
-async function _fetchMatchingCart(paymentObject, ctpProjectKey) {
-  const ctpConfig = config.getCtpConfig(ctpProjectKey)
-  const ctpClient = ctpClientBuilder.get(ctpConfig)
+async function _fetchMatchingCart(paymentObject) {
+  const ctpClient = ctpClientBuilder.get()
   const { body } = await ctpClient.fetch(
     ctpClient.builder.carts
       .where(`paymentInfo(payments(id="${paymentObject.id}"))`)

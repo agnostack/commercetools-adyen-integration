@@ -1,5 +1,7 @@
 const bunyan = require('bunyan')
-const config = require('./config/config')
+const configLoader = require('./config/config')
+
+const config = configLoader.load()
 
 let logger
 
@@ -28,7 +30,7 @@ function getLogger() {
     logger = bunyan.createLogger({
       name: 'ctp-adyen-integration-extension',
       stream: process.stderr,
-      level: config.getModuleConfig().logLevel || bunyan.INFO,
+      level: config.logLevel || bunyan.INFO,
     })
   return logger
 }

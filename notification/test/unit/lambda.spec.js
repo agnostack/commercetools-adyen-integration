@@ -1,89 +1,63 @@
 const sinon = require('sinon')
 const chai = require('chai')
-const { handler } = require('../../index.lambda')
+const { handler } = require('../../src/lambda')
 const notificationHandler = require('../../src/handler/notification/notification.handler')
+const setup = require('../../src/config/init/ensure-interface-interaction-custom-type')
 const logger = require('../../src/utils/logger')
 
 const { expect, assert } = chai
-const { getNotificationForTracking } = require('../../src/utils/commons')
 
 chai.use(require('chai-as-promised'))
 
 describe('Lambda handler', () => {
+  let ensureResourcesStub
+
+  beforeEach(() => {
+    ensureResourcesStub = sinon
+      .stub(setup, 'ensureInterfaceInteractionCustomType')
+      .returns(undefined)
+  })
+
   afterEach(() => {
-    notificationHandler.processNotification.restore()
+    setup.ensureInterfaceInteractionCustomType.restore()
+    notificationHandler.processNotifications.restore()
   })
 
   const event = {
-    notificationItems: [
-      {
-        NotificationRequestItem: {
-          additionalData: {
-            'metadata.commercetoolsProjectKey': 'adyen-integration-test',
-          },
-          merchantAccountCode: 'CommercetoolsGmbHDE775',
-        },
-      },
-    ],
+    notificationItems: [],
   }
 
+  it('only calls ensureResources once', async () => {
+    sinon.stub(notificationHandler, 'processNotifications').returns(undefined)
+
+    await handler(event)
+    await handler(event)
+
+    expect(ensureResourcesStub.calledOnce).to.equal(true)
+  })
+
   it('returns correct success response', async () => {
-    sinon.stub(notificationHandler, 'processNotification').returns(undefined)
+    sinon.stub(notificationHandler, 'processNotifications').returns(undefined)
 
     const result = await handler(event)
 
     expect(result).to.eql({ notificationResponse: '[accepted]' })
   })
 
-  it('logs unhandled exceptions', async () => {
-    const originalChildFn = logger.getLogger().child
-    try {
-      const logSpy = sinon.spy()
-      logger.getLogger().error = logSpy
-      logger.getLogger().child = () => ({
-        error: logSpy,
-      })
-
-      const error = new Error('some error')
-      sinon.stub(notificationHandler, 'processNotification').throws(error)
-
-      const result = await handler(event)
-
-      expect(result).to.eql({ notificationResponse: '[accepted]' })
-
-      const notificationItem = event.notificationItems.pop()
-      logSpy.calledWith(
-        {
-          notification: getNotificationForTracking(notificationItem),
-          err: error,
-        },
-        'Unexpected error when processing event'
-      )
-    } finally {
-      logger.getLogger().child = originalChildFn
-    }
-  })
-
-  it('throws error if no notificationItems were received and logs properly', async () => {
+  it('logs and throws unhandled exceptions', async () => {
     const logSpy = sinon.spy()
-    sinon.stub(notificationHandler, 'processNotification').returns(undefined)
     logger.getLogger().error = logSpy
 
-    const error = new Error('No notification received.')
+    const error = new Error('some error')
+    sinon.stub(notificationHandler, 'processNotifications').throws(error)
 
-    const emptyEvent = {}
-    const call = async () => handler(emptyEvent)
+    const call = async () => handler(event)
 
-    await expect(call()).to.be.rejectedWith(error.message)
+    await expect(call()).to.be.rejectedWith(error)
     assert(
       logSpy.calledWith(
-        sinon.match({
-          notification: undefined,
-          err: sinon.match
-            .instanceOf(Error)
-            .and(sinon.match.has('message', error.message)),
-        }),
-        `Unexpected error when processing event`
+        error,
+        `Unexpected error when processing event ${JSON.stringify(event)}`
       )
     )
   })
